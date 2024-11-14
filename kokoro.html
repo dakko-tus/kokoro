@@ -1,58 +1,10 @@
-{
-    "workbench.colorTheme": "Default High Contrast",
-    "[python]": {
-        "editor.formatOnType": true
-    }
-}
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>シンプルなウェブページ</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 0;
-        }
-        header {
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 1rem;
-        }
-        nav {
-            background-color: #f4f4f4;
-            padding: 0.5rem;
-        }
-        nav ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        nav ul li {
-            display: inline;
-            margin-right: 10px;
-        }
-        nav ul li a {
-            text-decoration: none;
-            color: #333;
-        }
-        main {
-            padding: 20px;
-        }
-        footer {
-            background-color: #333;
-            color: #fff;
-            text-align: center;
-            padding: 1rem;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-        }
-    </style>
+    <title>シンチョクン - カレンダー</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <header>
@@ -62,7 +14,7 @@
     <nav>
         <ul>
             <li><a href="#home">ホーム</a></li>
-            <li><a href="#about"></a></li>
+            <li><a href="#about">概要</a></li>
             <li><a href="#contact">お問い合わせ</a></li>
         </ul>
     </nav>
@@ -70,48 +22,61 @@
     <main>
         <h2>進捗確認サービス（シンチョクン）へようこそ</h2>
         <p>カレンダー機能や参加の有無確認機能などを兼ね備えています</p>
+
+        <div class="calendar">
+            <div class="calendar-header">
+                <button class="calendar-nav-button" aria-label="前の月"><span class="chevron-left"></span></button>
+                <h2 class="calendar-title">2024年5月</h2>
+                <button class="calendar-nav-button" aria-label="次の月"><span class="chevron-right"></span></button>
+            </div>
+            <div class="calendar-grid">
+                <div class="calendar-day-header">日</div>
+                <div class="calendar-day-header">月</div>
+                <div class="calendar-day-header">火</div>
+                <div class="calendar-day-header">水</div>
+                <div class="calendar-day-header">木</div>
+                <div class="calendar-day-header">金</div>
+                <div class="calendar-day-header">土</div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day">1</div>
+                <div class="calendar-day">2</div>
+                <div class="calendar-day">3</div>
+                <div class="calendar-day">4</div>
+                <div class="calendar-day">5</div>
+                <div class="calendar-day">6</div>
+                <div class="calendar-day">7</div>
+                <div class="calendar-day">8</div>
+                <div class="calendar-day">9</div>
+                <div class="calendar-day">10</div>
+                <div class="calendar-day">11</div>
+                <div class="calendar-day">12</div>
+                <div class="calendar-day">13</div>
+                <div class="calendar-day">14</div>
+                <div class="calendar-day">15</div>
+                <div class="calendar-day">16</div>
+                <div class="calendar-day">17</div>
+                <div class="calendar-day">18</div>
+                <div class="calendar-day">19</div>
+                <div class="calendar-day">20</div>
+                <div class="calendar-day">21</div>
+                <div class="calendar-day">22</div>
+                <div class="calendar-day">23</div>
+                <div class="calendar-day">24</div>
+                <div class="calendar-day">25</div>
+                <div class="calendar-day">26</div>
+                <div class="calendar-day">27</div>
+                <div class="calendar-day">28</div>
+                <div class="calendar-day">29</div>
+                <div class="calendar-day">30</div>
+                <div class="calendar-day">31</div>
+            </div>
+        </div>
     </main>
 
     <footer>
-        <p>&copy; 2024 シンプルなウェブページ. All rights reserved.</p>
+        <p>&copy; 2024 シンチョクン. All rights reserved.</p>
     </footer>
 </body>
 </html>
-import { useState } from 'react'
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react'
-
-export default function Calendar() {
-  const [currentDate, setCurrentDate] = useState(new Date())
-
-  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate()
-  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay()
-
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  }
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-  }
-
-  return (
-    <div className="w-full max-w-md mx-auto">
-      <div className="flex justify-between items-center mb-4">
-        <button onClick={prevMonth} className="p-2"><ChevronLeftIcon className="w-6 h-6" /></button>
-        <h2 className="text-xl font-bold">{currentDate.toLocaleString('ja-JP', { year: 'numeric', month: 'long' })}</h2>
-        <button onClick={nextMonth} className="p-2"><ChevronRightIcon className="w-6 h-6" /></button>
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {['日', '月', '火', '水', '木', '金', '土'].map(day => (
-          <div key={day} className="text-center font-bold">{day}</div>
-        ))}
-        {Array.from({ length: firstDayOfMonth }).map((_, index) => (
-          <div key={`empty-${index}`} className="text-center p-2"></div>
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, index) => (
-          <div key={index} className="text-center p-2 border">{index + 1}</div>
-        ))}
-      </div>
-    </div>
-  )
-}
