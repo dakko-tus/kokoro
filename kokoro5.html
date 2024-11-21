@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ヴィンテージカレンダー</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #f5e6d3;
+            color: #5d4037;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #fff9e6;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #8d6e63;
+        }
+        #calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+        .calendar-header {
+            grid-column: span 7;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        .day {
+            border: 1px solid #d7ccc8;
+            padding: 10px;
+            text-align: center;
+            background-color: #ffecb3;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .day:hover {
+            background-color: #ffe082;
+        }
+        .day.empty {
+            background-color: #f5e6d3;
+        }
+        .day.selected {
+            background-color: #ffcc80;
+            font-weight: bold;
+        }
+        .event-form {
+            margin-top: 20px;
+        }
+        input, button {
+            font-family: inherit;
+            font-size: 1em;
+            padding: 5px 10px;
+            margin: 5px 0;
+        }
+        input[type="text"] {
+            width: calc(100% - 22px);
+            border: 1px solid #d7ccc8;
+        }
+        button {
+            background-color: #8d6e63;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #6d4c41;
+        }
+        #events-list {
+            margin-top: 20px;
+        }
+        .event-item {
+            background-color: #ffecb3;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .attendance-buttons {
+            margin-top: 5px;
+        }
+        .attendance-buttons button {
+            margin-right: 5px;
+        }
+        .attending {
+            color: green;
+        }
+        .not-attending {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>カレンダー</h1>
+        <div id="calendar"></div>
+        <div class="event-form">
+            <input type="text" id="event-input" placeholder="イベントを入力">
+            <button onclick="addEvent()">イベントを追加</button>
+        </div>
+        <div id="events-list"></div>
+    </div>
+
+    <script>
+        let currentDate = new Date();
+        let selectedDate = null;
+        let events = {};
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '';
+
+            const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月",
+                                "7月", "8月", "9月", "10月", "11月", "12月"];
+            
+            const header = document.createElement('div');
+            header.className = 'calendar-header';
+            header.textContent = `${currentDate.getFullYear()}年 ${monthNames[currentDate.getMonth()]}`;
+            calendar.appendChild(header);
+
+            const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+
+            for (let i = 0; i < firstDay; i++) {
+                const emptyDay = document.createElement('div');
+                emptyDay.className = 'day empty';
+                calendar.appendChild(emptyDay);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
+                const day = document.createElement('div');
+                day.className = 'day';
+                day.textContent = i;
+                day.onclick = () => selectDate(i);
+                calendar.appendChild(day);
+            }
+
+            updateEventsList();
+        }
+
+        function selectDate(day) {
+            selectedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+            document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
+            event.target.classList.add('selected');
+            updateEventsList();
+        }
+
+        function addEvent() {
+            if (!selectedDate) return;
+            const eventInput = document.getElementById('event-input');
+            const eventText = eventInput.value.trim();
+            if (eventText) {
+                const dateString = selectedDate.toDateString();
+                if (!events[dateString]) {
+                    events[dateString] = [];
+                }
+                events[dateString].push({ text: eventText, attending: null });
+                eventInput.value = '';
+                updateEventsList();
+            }
+        }
+
+        function updateEventsList() {
+            const eventsList = document.getElementById('events-list');
+            eventsList.innerHTML = '';
+            if (selectedDate) {
+                const dateString = selectedDate.toDateString();
+                if (events[dateString]) {
+                    events[dateString].forEach((event, index) => {
+                        const eventItem = document.createElement('div');
+                        eventItem.className = 'event-item';
+                        eventItem.innerHTML = `
+                            <div>${event.text}</div>
+                            <div class="attendance-buttons">
+                                <button onclick="setAttendance(${index}, true)">参加</button>
+                                <button onclick="setAttendance(${index}, false)">不参加</button>
+                            </div>
+                            ${event.attending !== null ? 
+                                `<div class="${event.attending ? 'attending' : 'not-attending'}">
+                                    ${event.attending ? '参加' : '不参加'}
+                                </div>` : ''}
+                        `;
+                        eventsList.appendChild(eventItem);
+                    });
+                }
+            }
+        }
+
+        function setAttendance(index, attending) {
+            const dateString = selectedDate.toDateString();
+            if (events[dateString] && events[dateString][index]) {
+                events[dateString][index].attending = attending;
+                updateEventsList();
+            }
+        }
+
+        renderCalendar();
+    </script>
+</body>
+</html>
