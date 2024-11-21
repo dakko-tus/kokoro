@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ヴィンテージカレンダー</title>
+    <title>シンチョクン - 進捗確認サイト</title>
     <style>
         body {
             font-family: 'Courier New', Courier, monospace;
@@ -14,14 +14,21 @@
             padding: 20px;
         }
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .section {
+            flex: 1;
+            min-width: 300px;
             background-color: #fff9e6;
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        h1 {
+        h1, h2 {
             text-align: center;
             color: #8d6e63;
         }
@@ -56,16 +63,11 @@
             background-color: #ffcc80;
             font-weight: bold;
         }
-        .event-form {
-            margin-top: 20px;
-        }
-        input, button {
+        input, button, select {
             font-family: inherit;
             font-size: 1em;
             padding: 5px 10px;
             margin: 5px 0;
-        }
-        input[type="text"] {
             width: calc(100% - 22px);
             border: 1px solid #d7ccc8;
         }
@@ -79,44 +81,127 @@
         button:hover {
             background-color: #6d4c41;
         }
-        #events-list {
+        #events-list, #attendance-list, #chat-messages, #members-list {
             margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
         }
-        .event-item {
+        .event-item, .attendance-item, .chat-message, .member-item {
             background-color: #ffecb3;
             margin-bottom: 10px;
             padding: 10px;
             border-radius: 5px;
         }
-        .attendance-buttons {
-            margin-top: 5px;
+        .chat-message {
+            max-width: 80%;
         }
-        .attendance-buttons button {
-            margin-right: 5px;
+        .chat-message.sent {
+            margin-left: auto;
+            background-color: #c8e6c9;
         }
-        .attending {
-            color: green;
+        .chat-input {
+            display: flex;
+            margin-top: 10px;
         }
-        .not-attending {
-            color: red;
+        .chat-input input {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .chat-input button {
+            width: auto;
+        }
+        #login-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #login-form {
+            background-color: #fff9e6;
+            padding: 20px;
+            border-radius: 10px;
+            width: 300px;
         }
     </style>
 </head>
 <body>
+    <div id="login-section">
+        <div id="login-form">
+            <h2>グループアカウント作成</h2>
+            <input type="text" id="team-name" placeholder="チーム名" required>
+            <input type="password" id="team-password" placeholder="パスワード" required>
+            <button onclick="createGroup()">アカウント作成</button>
+        </div>
+    </div>
+
+    <h1>シンチョクン - 進捗確認サイト</h1>
     <div class="container">
-        <h1>カレンダー</h1>
-        <div id="calendar"></div>
-        <div class="event-form">
+        <div class="section">
+            <h2>カレンダー</h2>
+            <div id="calendar"></div>
             <input type="text" id="event-input" placeholder="イベントを入力">
             <button onclick="addEvent()">イベントを追加</button>
+            <div id="events-list"></div>
         </div>
-        <div id="events-list"></div>
+        <div class="section">
+            <h2>参加確認</h2>
+            <select id="attendance-event">
+                <option value="">イベントを選択</option>
+            </select>
+            <select id="attendance-member">
+                <option value="">メンバーを選択</option>
+            </select>
+            <select id="attendance-status">
+                <option value="">参加状況を選択</option>
+                <option value="参加">参加</option>
+                <option value="不参加">不参加</option>
+                <option value="未定">未定</option>
+            </select>
+            <button onclick="updateAttendance()">参加状況を更新</button>
+            <div id="attendance-list"></div>
+        </div>
+        <div class="section">
+            <h2>チャット</h2>
+            <div id="chat-messages"></div>
+            <div class="chat-input">
+                <input type="text" id="chat-input" placeholder="メッセージを入力">
+                <button onclick="sendMessage()">送信</button>
+            </div>
+        </div>
+        <div class="section">
+            <h2>メンバー管理</h2>
+            <input type="text" id="member-name" placeholder="メンバー名">
+            <button onclick="addMember()">メンバーを追加</button>
+            <div id="members-list"></div>
+        </div>
     </div>
 
     <script>
         let currentDate = new Date();
         let selectedDate = null;
         let events = {};
+        let attendance = {};
+        let chatMessages = [];
+        let members = [];
+        let currentGroup = null;
+
+        function createGroup() {
+            const teamName = document.getElementById('team-name').value.trim();
+            const teamPassword = document.getElementById('team-password').value;
+            if (teamName && teamPassword) {
+                currentGroup = { name: teamName, password: teamPassword };
+                document.getElementById('login-section').style.display = 'none';
+                alert(`グループ "${teamName}" が作成されました！`);
+            } else {
+                alert('チーム名とパスワードを入力してください。');
+            }
+        }
 
         function renderCalendar() {
             const calendar = document.getElementById('calendar');
@@ -148,6 +233,8 @@
             }
 
             updateEventsList();
+            updateAttendanceEventSelect();
+            updateAttendanceMemberSelect();
         }
 
         function selectDate(day) {
@@ -166,9 +253,10 @@
                 if (!events[dateString]) {
                     events[dateString] = [];
                 }
-                events[dateString].push({ text: eventText, attending: null });
+                events[dateString].push(eventText);
                 eventInput.value = '';
                 updateEventsList();
+                updateAttendanceEventSelect();
             }
         }
 
@@ -178,32 +266,112 @@
             if (selectedDate) {
                 const dateString = selectedDate.toDateString();
                 if (events[dateString]) {
-                    events[dateString].forEach((event, index) => {
+                    events[dateString].forEach(event => {
                         const eventItem = document.createElement('div');
                         eventItem.className = 'event-item';
-                        eventItem.innerHTML = `
-                            <div>${event.text}</div>
-                            <div class="attendance-buttons">
-                                <button onclick="setAttendance(${index}, true)">参加</button>
-                                <button onclick="setAttendance(${index}, false)">不参加</button>
-                            </div>
-                            ${event.attending !== null ? 
-                                `<div class="${event.attending ? 'attending' : 'not-attending'}">
-                                    ${event.attending ? '参加' : '不参加'}
-                                </div>` : ''}
-                        `;
+                        eventItem.textContent = event;
                         eventsList.appendChild(eventItem);
                     });
                 }
             }
         }
 
-        function setAttendance(index, attending) {
-            const dateString = selectedDate.toDateString();
-            if (events[dateString] && events[dateString][index]) {
-                events[dateString][index].attending = attending;
-                updateEventsList();
+        function updateAttendanceEventSelect() {
+            const attendanceEvent = document.getElementById('attendance-event');
+            attendanceEvent.innerHTML = '<option value="">イベントを選択</option>';
+            for (let date in events) {
+                events[date].forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = `${date}|${event}`;
+                    option.textContent = `${date} - ${event}`;
+                    attendanceEvent.appendChild(option);
+                });
             }
+        }
+
+        function updateAttendanceMemberSelect() {
+            const attendanceMember = document.getElementById('attendance-member');
+            attendanceMember.innerHTML = '<option value="">メンバーを選択</option>';
+            members.forEach(member => {
+                const option = document.createElement('option');
+                option.value = member;
+                option.textContent = member;
+                attendanceMember.appendChild(option);
+            });
+        }
+
+        function updateAttendance() {
+            const attendanceEvent = document.getElementById('attendance-event');
+            const attendanceMember = document.getElementById('attendance-member');
+            const attendanceStatus = document.getElementById('attendance-status');
+            if (attendanceEvent.value && attendanceMember.value && attendanceStatus.value) {
+                const key = `${attendanceEvent.value}|${attendanceMember.value}`;
+                attendance[key] = attendanceStatus.value;
+                updateAttendanceList();
+            }
+        }
+
+        function updateAttendanceList() {
+            const attendanceList = document.getElementById('attendance-list');
+            attendanceList.innerHTML = '';
+            for (let key in attendance) {
+                const [eventInfo, member] = key.split('|');
+                const [date, event] = eventInfo.split('|');
+                const status = attendance[key];
+                const attendanceItem = document.createElement('div');
+                attendanceItem.className = 'attendance-item';
+                attendanceItem.textContent = `${date} - ${event}: ${member} (${status})`;
+                attendanceList.appendChild(attendanceItem);
+            }
+        }
+
+        function sendMessage() {
+            const chatInput = document.getElementById('chat-input');
+            const message = chatInput.value.trim();
+            if (message) {
+                chatMessages.push({ text: message, sent: true });
+                chatInput.value = '';
+                updateChatMessages();
+                // Simulate a response
+                setTimeout(() => {
+                    chatMessages.push({ text: "メッセージを受け取りました。", sent: false });
+                    updateChatMessages();
+                }, 1000);
+            }
+        }
+
+        function updateChatMessages() {
+            const chatMessagesDiv = document.getElementById('chat-messages');
+            chatMessagesDiv.innerHTML = '';
+            chatMessages.forEach(message => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `chat-message ${message.sent ? 'sent' : ''}`;
+                messageDiv.textContent = message.text;
+                chatMessagesDiv.appendChild(messageDiv);
+            });
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+        }
+
+        function addMember() {
+            const memberInput = document.getElementById('member-name');
+            const memberName = memberInput.value.trim();
+            if (memberName && !members.includes(memberName)) {
+                members.push(memberName);
+                memberInput.value = '';
+                updateMembersList();
+                updateAttendanceMemberSelect();
+            }
+        }
+
+        function updateMembersList() {
+            const membersList = document.getElementById('members-list');
+            membersList.innerHTML = '';
+            members.forEach(member => {
+                const memberItem = document.createElement('div');
+                memberItem.className = 'member-item';
+                memberItem.textContent = member;
+                membersList.appendChild(memberItem);
+            });
         }
 
         renderCalendar();
